@@ -95,7 +95,7 @@ go test ./... -run TestBatchDelete     # run a specific test
 | Flag | Env var | Default | Description |
 |---|---|---|---|
 | `--config` | `ARCHIVER_CONFIG` | _(none)_ | Path to YAML config file. Auto-discovers `./archiver.yaml` if present. |
-| `--uri` | `ARCHIVER_URI` | `mongodb://localhost:27017` | MongoDB connection URI. Use `mongodb+srv://` for Atlas. |
+| `--uri` | `ARCHIVER_URI` | `mongodb://localhost:27017` | MongoDB connection URI. Use `mongodb+srv://` for Atlas. **Always quote on the command line** — replica set and Atlas URIs contain `?` and `&` characters that the shell interprets as special syntax if unquoted. |
 | `--database` | `ARCHIVER_DATABASE` | _(required)_ | Database name. |
 | `--cutoff-days` | `ARCHIVER_CUTOFF_DAYS` | _(required)_ | Archive jobs completed or canceled before midnight UTC of the current day, minus this many days. |
 | `--ids-file` | `ARCHIVER_IDS_FILE` | `job-ids.json` | Path where discovered job IDs are written after each run (for inspection only). |
@@ -110,6 +110,8 @@ go test ./... -run TestBatchDelete     # run a specific test
 | `--tls-cert-file` | `ARCHIVER_TLS_CERT_FILE` | _(none)_ | Path to a PEM file containing the client certificate (mutual TLS). Requires `--tls-key-file`. |
 | `--tls-key-file` | `ARCHIVER_TLS_KEY_FILE` | _(none)_ | Path to a PEM file containing the client private key (mutual TLS). Requires `--tls-cert-file`. |
 | `--tls-skip-verify` | `ARCHIVER_TLS_SKIP_VERIFY` | `false` | Disable TLS certificate verification. Insecure — avoid in production. |
+
+> **URI quoting**: always wrap the URI in single or double quotes on the command line. Replica set and Atlas URIs contain `?` and `&` which the shell treats as special characters when unquoted. `--uri "mongodb+srv://user:pass@cluster/?retryWrites=true&authSource=admin"` is correct; omitting the quotes silently truncates the URI at the `?` or backgrounds the process at `&`.
 
 > **Cutoff timing**: the cutoff is always pinned to midnight UTC of the current day, minus `--cutoff-days`. Running the tool at 9am or 11pm on the same day with the same `--cutoff-days` produces identical results. This makes scheduled and ad-hoc runs predictable and comparable.
 
@@ -269,7 +271,7 @@ The following script runs the archiver and then imports each exported collection
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROD_URI="mongodb://localhost:27017"
+PROD_URI="mongodb://host1:27017,host2:27017,host3:27017/?replicaSet=rs0&readPreference=secondaryPreferred"
 ARCHIVE_URI="mongodb://archive-host:27017"
 DATABASE="itential"
 ARCHIVE_DB="itential_archive"
